@@ -9,7 +9,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    QMessageBox::information(this,"","");
+    this->setWindowIcon(QIcon(":/MainWindowIcon.png"));
 }
 
 MainWindow::~MainWindow()
