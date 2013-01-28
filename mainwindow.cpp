@@ -17,12 +17,3 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-// Testing
-void MainWindow::on_pushButton_clicked()
-{
-    int r=QMessageBox::question(this,"","Exit?",QMessageBox::Yes|QMessageBox::No);
-    if(r==QMessageBox::Yes)
-    {
-        close();
-    }
-}
