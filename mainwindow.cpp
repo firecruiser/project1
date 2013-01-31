@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "turret.h"
 #include <QtGui>
 #include <QtCore>
 #include <QMessageBox>

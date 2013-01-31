@@ -13,9 +13,11 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    turret.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    turret.h
 
 FORMS    += mainwindow.ui
 
