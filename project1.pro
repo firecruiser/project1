@@ -24,3 +24,11 @@ FORMS    += mainwindow.ui
 RESOURCES += \
     WindowIcons.qrc
 RC_FILE = MainWindow.rc
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/hidapi/windows/release/ -lhidapi
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/hidapi/windows/debug/ -lhidapi
+else:unix: LIBS += -L$$PWD/hidapi/windows/ -lhidapi
+
+INCLUDEPATH += $$PWD/hidapi/windows/Debug
+DEPENDPATH += $$PWD/hidapi/windows/Debug
