@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "turret.h"
 
+
 namespace Ui {
 class MainWindow;
 }
@@ -54,6 +55,7 @@ private:
     void senderror();
     void enablebuttons();
     void disablebuttons();
+    void analyzeimage();
 };
 
 #endif // MAINWINDOW_H

@@ -4,6 +4,7 @@
 #include <QtGui>
 #include <QtCore>
 #include <QMessageBox>
+#include <QFileDialog>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -62,7 +63,55 @@ void MainWindow::disablebuttons()
 
 
 
+void MainWindow::analyzeimage()
+{
+    QString currentcolor=ui->colorchanger->currentText();
+    int hmin,hmax,vmin=100,vmax=255,smin=100,smax=255;
+    if(currentcolor=="Red")
+    {
+        hmin=-10;
+        hmax=10;
+    }
+    else if(currentcolor=="Green")
+    {
+        hmin=110;
+        hmax=130;
+    }
+    else if(currentcolor=="Blue")
+    {
+        hmin=230;
+        hmax=250;
+    }
 
+
+
+
+    QString loadfile=QFileDialog::getOpenFileName(this,"","","Image Files (*.jpg *.bmp *.png)");
+    QImage image(loadfile);
+    image=image.convertToFormat(QImage::Format_Indexed8);
+    for (int i=0;i<image.colorCount();i++)
+    {
+        QRgb rgb=image.color(i);
+            QColor color(rgb);
+            int h,s,v;
+            color.getHsv(&h,&s,&v);
+            if(h>=hmin&&h<=hmax&&s<=smax&&s>=smin&&v<=vmax&&v>=vmin)
+            {
+                s=255;
+                v=0;
+            }
+            else
+            {
+                s=0;
+                v=255;
+            }
+            color.setHsv(h,s,v);
+            image.setColor(i,color.rgb());
+    }
+    QPixmap pixmapper;
+    pixmapper.convertFromImage(image);
+    ui->videostreamviewer->setPixmap(pixmapper);
+}
 
 
 
@@ -182,7 +231,7 @@ void MainWindow::on_reloadbutton_clicked()
 
 void MainWindow::on_startstopbutton_clicked()
 {
-
+    analyzeimage();
 }
 
 void MainWindow::on_calibratebutton_clicked()

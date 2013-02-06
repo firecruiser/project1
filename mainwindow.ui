@@ -78,11 +78,6 @@
              </item>
              <item>
               <property name="text">
-               <string>Black</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
                <string>Green</string>
               </property>
              </item>
