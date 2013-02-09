@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include "turret.h"
+#include "opencv/cv.h"
 
 
 namespace Ui {
@@ -56,6 +57,8 @@ private:
     void enablebuttons();
     void disablebuttons();
     void analyzeimage();
+    IplImage* GetThresholdedImage(IplImage* img);
+    QImage* IplImage2QImage(IplImage *iplImg);
 };
 
 #endif // MAINWINDOW_H

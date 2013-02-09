@@ -32,3 +32,6 @@ else:unix: LIBS += -L$$PWD/hidapi/windows/ -lhidapi
 
 INCLUDEPATH += $$PWD/hidapi/windows/Debug
 DEPENDPATH += $$PWD/hidapi/windows/Debug
+
+INCLUDEPATH +=$$PWD/../opencv/build/install/include \ $$PWD/../opencv/build/install/bin
+LIBS += $$PWD/../opencv/build/install/lib/*.lib

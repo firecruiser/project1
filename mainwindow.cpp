@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "turret.h"
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
 #include <QtGui>
 #include <QtCore>
 #include <QMessageBox>
@@ -16,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
     if(turr->init()!=0)
     {
         QMessageBox::critical(this,"Error","Unable to connect to turret! Check if turret is connected and try again!");
-        disablebuttons();
+        //disablebuttons();
     }
     ui->firebutton->setEnabled(false);
     ui->firebutton->setStyleSheet("Background: blue");
@@ -62,57 +64,97 @@ void MainWindow::disablebuttons()
 
 
 
-
+//function to analyze an image. may be moved into a thread at a later time
 void MainWindow::analyzeimage()
 {
-    QString currentcolor=ui->colorchanger->currentText();
-    int hmin,hmax,vmin=100,vmax=255,smin=100,smax=255;
-    if(currentcolor=="Red")
+    CvCapture* capture=0;
+    capture = cvCaptureFromCAM(0);
+    if(!capture)
     {
-        hmin=-10;
-        hmax=10;
+        QMessageBox::critical(this,"Error","Unable to connect to camera");
+        return;
     }
-    else if(currentcolor=="Green")
+    IplImage* frame=0;
+    QImage* tmpimage;
+    while(true)
     {
-        hmin=110;
-        hmax=130;
-    }
-    else if(currentcolor=="Blue")
-    {
-        hmin=230;
-        hmax=250;
+        QApplication::processEvents();
+        frame=cvQueryFrame(capture);
+        if(!frame)
+            break;
+        IplImage* imgYellowThresh=GetThresholdedImage(frame);
+        tmpimage=IplImage2QImage(frame);
+        QPixmap tmppix;
+        tmppix=QPixmap::fromImage(*tmpimage);
+        ui->videostreamviewer->setPixmap(tmppix);
+        int c=cvWaitKey(10);
+        if(c!=-1)
+        {
+            break;
+        }
     }
 
 
-
-
-    QString loadfile=QFileDialog::getOpenFileName(this,"","","Image Files (*.jpg *.bmp *.png)");
-    QImage image(loadfile);
-    image=image.convertToFormat(QImage::Format_Indexed8);
-    for (int i=0;i<image.colorCount();i++)
-    {
-        QRgb rgb=image.color(i);
-            QColor color(rgb);
-            int h,s,v;
-            color.getHsv(&h,&s,&v);
-            if(h>=hmin&&h<=hmax&&s<=smax&&s>=smin&&v<=vmax&&v>=vmin)
-            {
-                s=255;
-                v=0;
-            }
-            else
-            {
-                s=0;
-                v=255;
-            }
-            color.setHsv(h,s,v);
-            image.setColor(i,color.rgb());
-    }
-    QPixmap pixmapper;
-    pixmapper.convertFromImage(image);
-    ui->videostreamviewer->setPixmap(pixmapper);
 }
 
+
+
+
+
+QImage*  MainWindow::IplImage2QImage(IplImage *iplImg)
+ {
+ int h = iplImg->height;
+ int w = iplImg->width;
+ int channels = iplImg->nChannels;
+ QImage *qimg = new QImage(w, h, QImage::Format_ARGB32);
+ char *data = iplImg->imageData;
+
+for (int y = 0; y < h; y++, data += iplImg->widthStep)
+ {
+ for (int x = 0; x < w; x++)
+ {
+ char r, g, b, a = 0;
+ if (channels == 1)
+ {
+ r = data[x * channels];
+ g = data[x * channels];
+ b = data[x * channels];
+ }
+ else if (channels == 3 || channels == 4)
+ {
+ r = data[x * channels + 2];
+ g = data[x * channels + 1];
+ b = data[x * channels];
+ }
+
+if (channels == 4)
+ {
+ a = data[x * channels + 3];
+ qimg->setPixel(x, y, qRgba(r, g, b, a));
+ }
+ else
+ {
+ qimg->setPixel(x, y, qRgb(r, g, b));
+ }
+ }
+ }
+ return qimg;
+
+}
+
+
+
+
+
+IplImage* MainWindow::GetThresholdedImage(IplImage* img)
+{
+    IplImage* imgHSV=cvCreateImage(cvGetSize(img),8,3);
+    cvCvtColor(img,imgHSV,CV_BGR2HSV);
+    IplImage* imgThreshed = cvCreateImage(cvGetSize(img),8,1);
+    cvInRangeS(imgHSV,cvScalar(20,100,100),cvScalar(30,255,255),imgThreshed);
+    cvReleaseImage(&imgHSV);
+    return imgThreshed;
+}
 
 
 
