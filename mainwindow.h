@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include "turret.h"
 #include "opencv/cv.h"
+#include "opencv/highgui.h"
+#include "readimages.h"
 
 
 namespace Ui {
@@ -18,6 +20,11 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+
+signals:
+    void stopVideo();
+protected:
+    void closeEvent(QCloseEvent *);
 
 private slots:
     void on_upbutton_pressed();
@@ -50,15 +57,19 @@ private slots:
 
     void on_actionConnect_to_Turret_triggered();
 
+    void on_actionConnect_to_Camera_triggered();
+
+    void updatepic(QPixmap);
+
+    void errorstring(QString);
 private:
     Ui::MainWindow *ui;
     Turret *turr;
+    QThread* thread;
+    ReadImages* readimg;
     void senderror();
     void enablebuttons();
     void disablebuttons();
-    void analyzeimage();
-    IplImage* GetThresholdedImage(IplImage* img);
-    QImage* IplImage2QImage(IplImage *iplImg);
 };
 
 #endif // MAINWINDOW_H

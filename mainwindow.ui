@@ -266,6 +266,16 @@
        </widget>
       </item>
       <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Time Running</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLCDNumber" name="lcdNumber"/>
+      </item>
+      <item>
        <spacer name="verticalSpacer_3">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
@@ -456,6 +466,7 @@ background-color: rgb(255, 0, 0);</string>
     <addaction name="actionCalibrate"/>
     <addaction name="actionReload"/>
     <addaction name="actionConnect_to_Turret"/>
+    <addaction name="actionConnect_to_Camera"/>
    </widget>
    <addaction name="menuOptions"/>
   </widget>
@@ -487,6 +498,11 @@ background-color: rgb(255, 0, 0);</string>
   <action name="actionConnect_to_Turret">
    <property name="text">
     <string>Connect to Turret</string>
+   </property>
+  </action>
+  <action name="actionConnect_to_Camera">
+   <property name="text">
+    <string>Connect to Camera</string>
    </property>
   </action>
  </widget>

@@ -14,10 +14,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    turret.cpp
+    turret.cpp \
+    readimages.cpp
 
 HEADERS  += mainwindow.h \
-    turret.h
+    turret.h \
+    readimages.h
 
 FORMS    += mainwindow.ui
 
@@ -35,3 +37,11 @@ DEPENDPATH += $$PWD/hidapi/windows/Debug
 
 INCLUDEPATH +=$$PWD/../opencv/build/install/include \ $$PWD/../opencv/build/install/bin
 LIBS += $$PWD/../opencv/build/install/lib/*.lib
+
+
+LIBS += "$$PWD/../../Program Files/Microsoft SDKs/Kinect/v1.6/lib/x86/Kinect10.lib"
+
+INCLUDEPATH += "$$PWD/../../Program Files/Microsoft SDKs/Kinect/v1.6/lib/x86"
+DEPENDPATH += "$$PWD/../../Program Files/Microsoft SDKs/Kinect/v1.6/lib/x86"
+
+INCLUDEPATH += "$$PWD/../../Program Files/Microsoft SDKs/Kinect/v1.6/inc"

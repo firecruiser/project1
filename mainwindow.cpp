@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "turret.h"
+#include "readimages.h"
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <QtGui>
@@ -18,10 +19,28 @@ MainWindow::MainWindow(QWidget *parent) :
     if(turr->init()!=0)
     {
         QMessageBox::critical(this,"Error","Unable to connect to turret! Check if turret is connected and try again!");
-        //disablebuttons();
+        disablebuttons();
     }
     ui->firebutton->setEnabled(false);
     ui->firebutton->setStyleSheet("Background: blue");
+    thread=new QThread;
+    readimg=new ReadImages();
+    connect(readimg,SIGNAL(error(QString)),this,SLOT(errorstring(QString)));
+    if(readimg->initialize()==0)
+    {
+    readimg->moveToThread(thread);
+    connect(thread,SIGNAL(started()),readimg,SLOT(startimages()));
+    connect(readimg,SIGNAL(finished()),thread,SLOT(quit()));
+    connect(readimg,SIGNAL(finished()),readimg,SLOT(deleteLater()));
+    connect(thread,SIGNAL(finished()),thread,SLOT(deleteLater()));
+    connect(readimg,SIGNAL(picready(QPixmap)),this,SLOT(updatepic(QPixmap)));
+    connect(this,SIGNAL(stopVideo()),readimg,SLOT(endimages()));
+    thread->start();
+    }
+    else
+    {
+        ui->videostreamviewer->setText("No Camera Attatched \n Please connect a Camera and attempt to Reconnect!");
+    }
 }
 
 MainWindow::~MainWindow()
@@ -29,6 +48,16 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    emit stopVideo();
+    while(thread->isRunning())
+    {
+        this->hide();
+        QApplication::processEvents();
+    }
+    event->accept();
+}
 
 
 
@@ -60,126 +89,6 @@ void MainWindow::disablebuttons()
     ui->autobox->setEnabled(false);
     ui->calibratebutton->setEnabled(false);
 }
-
-
-
-
-//function to analyze an image. may be moved into a thread at a later time
-void MainWindow::analyzeimage()
-{
-    CvCapture* capture=0;
-    capture = cvCaptureFromCAM(0);
-    if(!capture)
-    {
-        QMessageBox::critical(this,"Error","Unable to connect to camera");
-        return;
-    }
-    IplImage* frame=0;
-    QImage* tmpimage;
-    while(true)
-    {
-        QApplication::processEvents();
-        frame=cvQueryFrame(capture);
-        if(!frame)
-            break;
-        IplImage* imgYellowThresh=GetThresholdedImage(frame);
-        tmpimage=IplImage2QImage(frame);
-        QPixmap tmppix;
-        tmppix=QPixmap::fromImage(*tmpimage);
-        ui->videostreamviewer->setPixmap(tmppix);
-        int c=cvWaitKey(10);
-        if(c!=-1)
-        {
-            break;
-        }
-    }
-
-
-}
-
-
-
-
-
-QImage*  MainWindow::IplImage2QImage(IplImage *iplImg)
- {
- int h = iplImg->height;
- int w = iplImg->width;
- int channels = iplImg->nChannels;
- QImage *qimg = new QImage(w, h, QImage::Format_ARGB32);
- char *data = iplImg->imageData;
-
-for (int y = 0; y < h; y++, data += iplImg->widthStep)
- {
- for (int x = 0; x < w; x++)
- {
- char r, g, b, a = 0;
- if (channels == 1)
- {
- r = data[x * channels];
- g = data[x * channels];
- b = data[x * channels];
- }
- else if (channels == 3 || channels == 4)
- {
- r = data[x * channels + 2];
- g = data[x * channels + 1];
- b = data[x * channels];
- }
-
-if (channels == 4)
- {
- a = data[x * channels + 3];
- qimg->setPixel(x, y, qRgba(r, g, b, a));
- }
- else
- {
- qimg->setPixel(x, y, qRgb(r, g, b));
- }
- }
- }
- return qimg;
-
-}
-
-
-
-
-
-IplImage* MainWindow::GetThresholdedImage(IplImage* img)
-{
-    IplImage* imgHSV=cvCreateImage(cvGetSize(img),8,3);
-    cvCvtColor(img,imgHSV,CV_BGR2HSV);
-    IplImage* imgThreshed = cvCreateImage(cvGetSize(img),8,1);
-    cvInRangeS(imgHSV,cvScalar(20,100,100),cvScalar(30,255,255),imgThreshed);
-    cvReleaseImage(&imgHSV);
-    return imgThreshed;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -253,7 +162,7 @@ void MainWindow::on_downbutton_released()
 
 void MainWindow::on_firebutton_clicked()
 {
-    if(turr->move(FIRE,4)!=0)
+    if(turr->move(FIRE,4.5)!=0)
     {
         senderror();
     }
@@ -273,7 +182,7 @@ void MainWindow::on_reloadbutton_clicked()
 
 void MainWindow::on_startstopbutton_clicked()
 {
-    analyzeimage();
+
 }
 
 void MainWindow::on_calibratebutton_clicked()
@@ -319,4 +228,33 @@ void MainWindow::on_actionConnect_to_Turret_triggered()
         QMessageBox::information(this,"Success","Connection to turret established");
         enablebuttons();
     }
+}
+
+void MainWindow::on_actionConnect_to_Camera_triggered()
+{
+    if(readimg->initialize()==0)
+    {
+    readimg->moveToThread(thread);
+    connect(thread,SIGNAL(started()),readimg,SLOT(startimages()));
+    connect(readimg,SIGNAL(finished()),thread,SLOT(quit()));
+    connect(readimg,SIGNAL(finished()),readimg,SLOT(deleteLater()));
+    connect(thread,SIGNAL(finished()),thread,SLOT(deleteLater()));
+    connect(readimg,SIGNAL(picready(QPixmap)),this,SLOT(updatepic(QPixmap)));
+    connect(this,SIGNAL(stopVideo()),readimg,SLOT(endimages()));
+    thread->start();
+    }
+    else
+    {
+        ui->videostreamviewer->setText("No Camera Attatched \n Please connect a Camera and attempt to Reconnect!");
+    }
+}
+
+void MainWindow::errorstring(QString err)
+{
+    QMessageBox::critical(this,"Error",err);
+}
+
+void MainWindow::updatepic(QPixmap newpicture)
+{
+    ui->videostreamviewer->setPixmap(newpicture);
 }
