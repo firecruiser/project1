@@ -23,6 +23,43 @@ ReadImages::~ReadImages()
 }
 
 
+
+//stops image collection so the readimages object may be destroyed and the thread stopped
+void ReadImages::endimages()
+{
+    timer->stop();
+    emit finished();
+}
+
+
+//after initiation - starts timer and begins sending image signals
+void ReadImages::startimages()
+{
+    frame=cvCreateImage(cvSize(640,480),IPL_DEPTH_8U,4);
+    timer=new QTimer(this);
+    connect(timer,SIGNAL(timeout()),this,SLOT(sendimage()));
+    timer->start(30);
+}
+
+//gets image from kinect then converts the image into a QImage format to be sent to the gui
+void ReadImages::sendimage()
+{
+    tmpimage=NULL;
+    if(getColor(rgbStream,frame)!=0)
+    {
+        return;
+    }
+
+        tmpimage=IplImage2QImage(frame);
+        tmppix=QPixmap::fromImage(*tmpimage);
+        delete tmpimage;
+        emit picready(tmppix);
+}
+
+
+
+
+//Initializes the kinect and returns an error if the kinect cannot be found or the image stream cannot be started
 int ReadImages::initialize()
 {
 
@@ -36,27 +73,11 @@ int ReadImages::initialize()
         return 0;
     }
 
-    //enable below code to connect to webcam
-    //this is disabled except for testing purposes without a kinect device
-    /*
-    capture=0;
-    capture = cvCaptureFromCAM(0);
-    if(!capture)
-    {
-        emit error("Unable to obtain image from camera");
-        qDebug()<<"no camera";
-
-        return -1;
-    }
-    else
-    {
-        return 0;
-    }
-    */
-
 }
 
-
+//called by the initiating function and begins the image stream.  will return false if the sensor cannot be obtained
+//defines a handle - rgbStream to get images from
+//defines sensor to allow access to the kinect
 bool ReadImages::initKinect() {
     // Get a working kinect sensor
     int numSensors;
@@ -77,18 +98,24 @@ bool ReadImages::initKinect() {
 
 
 
-
+//convert OpenCV image to QImage
+//takes IplImage format that is obtained from kinect
+//returns a pointer to a QImage
 QImage*  ReadImages::IplImage2QImage(IplImage *iplImg)
  {
  int h = iplImg->height;
  int w = iplImg->width;
  int channels = iplImg->nChannels;
- QImage *qimg = new QImage(w, h, QImage::Format_ARGB32);
+ QImage *qimg = new QImage(w, h, QImage::Format_RGB32);
+ if(qimg->isNull())
+ {
+     qDebug()<<"unable to allocate image";
+ }
  data = iplImg->imageData;
 
 for (int y = 0; y < h; y++, data += iplImg->widthStep)
  {
- for (int x = 0; x < w; x++)
+ for (int x = 0; x <w; x++)
  {
  char r, g, b, a = 0;
  if (channels == 1)
@@ -107,50 +134,22 @@ for (int y = 0; y < h; y++, data += iplImg->widthStep)
 if (channels == 4)
  {
  a = data[x * channels + 3];
- qimg->setPixel(x, y, qRgba(r, g, b, a));
+ qimg->setPixel((w-1)-x, y, qRgba(r, g, b, a));
  }
  else
  {
- qimg->setPixel(x, y, qRgb(r, g, b));
+ qimg->setPixel((w-1)-x, y, qRgb(r, g, b));
  }
  }
  }
+
  return qimg;
-
 }
 
-IplImage* ReadImages::GetThresholdedImage(IplImage* img)
-{
-    IplImage* imgHSV=cvCreateImage(cvGetSize(img),8,3);
-    cvCvtColor(img,imgHSV,CV_BGR2HSV);
-    IplImage* imgThreshed = cvCreateImage(cvGetSize(img),8,1);
-    cvInRangeS(imgHSV,cvScalar(160,100,100),cvScalar(179,255,255),imgThreshed);
-    cvReleaseImage(&imgHSV);
-    return imgThreshed;
-}
 
-void ReadImages::sendimage()
-{
-    frame=0;
-    tmpimage=NULL;
-    if(getColor(rgbStream,frame)!=0)
-    {
-        return;
-    }
 
-    //testing code that uses webcam image capture
-    /*
-        frame=cvQueryFrame(capture);
-        if(!frame)
-            return;
-        //IplImage* imgThresh=GetThresholdedImage(frame);
-        */
-        tmpimage=IplImage2QImage(frame);
-        tmppix=QPixmap::fromImage(*tmpimage);
-        delete tmpimage;
-        emit picready(tmppix);
-}
 
+//obtains image from kinect and defines the IplImage poiter to the image obtained from the kinect
 int ReadImages::getColor(HANDLE h, IplImage* color)
 {
     const NUI_IMAGE_FRAME * pImageFrame = NULL;
@@ -167,20 +166,7 @@ int ReadImages::getColor(HANDLE h, IplImage* color)
         BYTE * pBuffer = (BYTE*) LockedRect.pBits;
         cvSetData(color, pBuffer, LockedRect.Pitch);
     }
+
     NuiImageStreamReleaseFrame(h, pImageFrame);
     return 0;
-}
-
-void ReadImages::endimages()
-{
-    timer->stop();
-    cvReleaseCapture(&capture);
-    emit finished();
-}
-
-void ReadImages::startimages()
-{
-    timer=new QTimer(this);
-    connect(timer,SIGNAL(timeout()),this,SLOT(sendimage()));
-    timer->start(60);
 }
