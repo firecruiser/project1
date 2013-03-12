@@ -47,6 +47,8 @@ public:
 
     void setparameters(double,double,double,double);
 
+        hid_device* handle;
+
 public slots:
 
     void pauseshooting();
@@ -69,8 +71,6 @@ private:
     //current number of missiles on the launcher
     int missilecount;
 
-    //the connection to the launcher
-    hid_device* handle;
 
     //the array to send to the launcher
     unsigned char buf[9];
@@ -87,6 +87,13 @@ private:
     QTimer movetimer;
     bool inmotion;
     bool shootingcanceled;
+
+
+
+
+    double timethismove;
+    QTime timemoved;
+    MissileCmd currentmovedirection;
 };
 
 #endif // TURRET_H

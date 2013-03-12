@@ -67,6 +67,9 @@ int Turret::move(MissileCmd cmd,double duration)
     }
     if(duration!=0)
     {
+        timethismove=duration;
+        timemoved.start();
+        currentmovedirection=cmd;
         movetimer.start(duration*1000);
     }
     if(cmd==FIRE)
@@ -209,8 +212,23 @@ void Turret::emitstop()
 
 void Turret::pauseshooting()
 {
+    emitstop();
+    double timeyet=timethismove-timemoved.elapsed();
     QMessageBox::information(this,"Paused","Shooting Paused! \n Ok to Resume");
     emit(resume());
+    inmotion=true;
+    move(currentmovedirection,timeyet);
+    while(inmotion)
+    {
+        qApp->processEvents();
+    }
+    inmotion=true;
+    if(shootingcanceled)
+    {
+        return;
+    }
+
+
 }
 
 void Turret::stopshooting()

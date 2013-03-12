@@ -90,6 +90,7 @@ void MainWindow::enablebuttons()
     ui->shotbox->setEnabled(true);
     ui->autobox->setEnabled(true);
     ui->timeBox->setEnabled(true);
+    ui->actionReload->setEnabled(true);
 }
 
 
@@ -102,6 +103,7 @@ void MainWindow::disablebuttons()
     ui->shotbox->setEnabled(false);
     ui->autobox->setEnabled(false);
     ui->timeBox->setEnabled(false);
+    ui->actionReload->setEnabled(false);
 }
 
 
@@ -112,7 +114,8 @@ void MainWindow::setupautobuttons()
     ui->startstopbutton->hide();
     ui->stopButton->show();
     ui->pauseButton->show();
-
+    ui->actionCalibrate->setEnabled(false);
+    ui->actionReload->setEnabled(false);
 }
 
 void MainWindow::restoredefaultbuttons()
@@ -122,7 +125,8 @@ void MainWindow::restoredefaultbuttons()
     ui->startstopbutton->show();
     ui->stopButton->hide();
     ui->pauseButton->hide();
-
+    ui->actionCalibrate->setEnabled(true);
+    ui->actionReload->setEnabled(true);
 }
 
 
@@ -387,6 +391,8 @@ void MainWindow::on_actionConnect_to_Turret_triggered()
     {
         QMessageBox::critical(this,"Error","Unable to connect to turret! Check if turret is connected and try again!");
         disablebuttons();
+        ui->actionReload->setEnabled(false);
+        ui->actionCalibrate->setEnabled(false);
     }
     else
     {
@@ -395,6 +401,11 @@ void MainWindow::on_actionConnect_to_Turret_triggered()
         connect(this,SIGNAL(pauseshooting()),turr,SLOT(pauseshooting()));
         connect(this,SIGNAL(stopshooting()),turr,SLOT(stopshooting()));
         connect(turr,SIGNAL(resume()),this,SLOT(shootingresumed()));
+        ui->actionReload->setEnabled(true);
+        if(thread->isRunning())
+        {
+            ui->actionCalibrate->setEnabled(true);
+        }
     }
 }
 
@@ -417,10 +428,18 @@ void MainWindow::on_actionConnect_to_Camera_triggered()
     connect(readimg,SIGNAL(picready(QPixmap)),this,SLOT(updatepic(QPixmap)));
     connect(this,SIGNAL(stopVideo()),readimg,SLOT(endimages()));
     thread->start();
+    if(turr->handle!=NULL)
+    {
+    ui->actionCalibrate->setEnabled(true);
+    }
     }
     else
     {
-        ui->videostreamviewer->setText("No Camera Attatched \n Please connect a Camera and attempt to Reconnect!");
+        ui->videostreamviewer->setStyleSheet("background-color : black; color : white;");
+        ui->videostreamviewer->setAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+        ui->videostreamviewer->setText("No Kinect Found \n Please Check Connection and Attempt to Reconnect!");
+        ui->actionCalibrate->setEnabled(false);
+        delete readimg;
     }
 }
 
@@ -480,3 +499,4 @@ void MainWindow::updaterunningtime()
 {
     ui->timeNumber->display(ui->timeNumber->value()+0.1);
 }
+
