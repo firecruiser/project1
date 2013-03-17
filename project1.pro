@@ -16,15 +16,18 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     turret.cpp \
     readimages.cpp \
-    calibrationwindow.cpp
+    calibrationwindow.cpp \
+    helpwindow.cpp
 
 HEADERS  += mainwindow.h \
     turret.h \
     readimages.h \
-    calibrationwindow.h
+    calibrationwindow.h \
+    helpwindow.h
 
 FORMS    += mainwindow.ui \
-    calibrationwindow.ui
+    calibrationwindow.ui \
+    helpwindow.ui
 
 RESOURCES += \
     WindowIcons.qrc

@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "turret.h"
 #include "readimages.h"
+#include "helpwindow.h"
 #include "calibrationwindow.h"
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
@@ -12,6 +13,10 @@
 #include <QDebug>
 #include "BlobResult.h"
 using namespace cv;
+
+// creates the user interface and defines the default values for the threshold ranges
+// unless the values are found in a settings file
+// attempts initial connection to the turret and camera
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -22,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
     alpha=57;
     alphav=43;
 
-    QSettings* targetsettings=new QSettings("targetsettings.ini",QSettings::IniFormat);
+    QSettings* targetsettings=new QSettings(QApplication::applicationDirPath()+"/targetsettings.ini",QSettings::IniFormat);
     targetsettings->beginGroup("target");
     h=targetsettings->value("h",10).toDouble();
     offset=targetsettings->value("offset",-.66).toDouble(); //in feet!!!!!!
@@ -57,11 +62,13 @@ MainWindow::MainWindow(QWidget *parent) :
 
 }
 
+// destroys the user interface
 MainWindow::~MainWindow()
 {
     delete ui;
 }
 
+// catches the window close event to stop the image thread
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     emit stopVideo();
@@ -75,7 +82,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 
 
-
+// error that is called if the program is unable to send a message to the turret
 void MainWindow::senderror()
 {
     QMessageBox::critical(this,"Error","Unable to send to turret");
@@ -83,7 +90,7 @@ void MainWindow::senderror()
 
 
 
-
+// enables the gui buttons if a turret and camera are found
 void MainWindow::enablebuttons()
 {
     ui->controlbox->setEnabled(true);
@@ -96,7 +103,7 @@ void MainWindow::enablebuttons()
 
 
 
-
+// disables the gui buttons if a turret or camera are not found
 void MainWindow::disablebuttons()
 {
     ui->controlbox->setEnabled(false);
@@ -106,7 +113,7 @@ void MainWindow::disablebuttons()
     ui->actionReload->setEnabled(false);
 }
 
-
+// sets up the buttons during the auto targeting sequence
 void MainWindow::setupautobuttons()
 {
     ui->controlbox->setEnabled(false);
@@ -118,6 +125,7 @@ void MainWindow::setupautobuttons()
     ui->actionReload->setEnabled(false);
 }
 
+// returns the gui to the normal state after the auto target sequence
 void MainWindow::restoredefaultbuttons()
 {
     ui->controlbox->setEnabled(true);
@@ -129,7 +137,7 @@ void MainWindow::restoredefaultbuttons()
     ui->actionReload->setEnabled(true);
 }
 
-
+// called if the user clicks the stop buton during targeting
 void MainWindow::on_stopButton_clicked()
 {
     emit(stopshooting());
@@ -137,6 +145,7 @@ void MainWindow::on_stopButton_clicked()
     restoredefaultbuttons();
 }
 
+// called if the user clicks the pause button during targeting
 void MainWindow::on_pauseButton_clicked()
 {
     timeshooting.stop();
@@ -144,13 +153,14 @@ void MainWindow::on_pauseButton_clicked()
 
 }
 
+// resumes the timer so the gui time display is accurate
 void MainWindow::shootingresumed()
 {
     timeshooting.start(100);
 }
 
 
-
+// functions for manual movement buttons
 void MainWindow::on_upbutton_pressed()
 {
     if(turr->move(UP,0)!=0)
@@ -230,11 +240,14 @@ void MainWindow::on_firebutton_clicked()
     }
 }
 
+
+// calls the reload action when reload is clicked
 void MainWindow::on_reloadbutton_clicked()
 {
     on_actionReload_triggered();
 }
 
+// starts the auto targeting sequence
 void MainWindow::on_startstopbutton_clicked()
 {
     shootingstopped=false;
@@ -310,6 +323,7 @@ void MainWindow::on_startstopbutton_clicked()
 
 }
 
+// obtains the angles to the center of each target found
 void MainWindow::getangles(targetcenter* target)
 {
     viewwidth=2*h*tan((alpha/2)*pi/180);
@@ -329,7 +343,7 @@ void MainWindow::getangles(targetcenter* target)
 }
 
 
-
+// thesholds the IplImage so the targeting sequence may find the targets
 IplImage* MainWindow::threshimage(IplImage* img)
 {
 
@@ -348,7 +362,7 @@ IplImage* MainWindow::threshimage(IplImage* img)
 }
 
 
-
+// gets a QImage from the current image displayed on the gui
 QImage* MainWindow::getQImage()
 {
     const QPixmap *tmppix=ui->videostreamviewer->pixmap();
@@ -357,6 +371,7 @@ QImage* MainWindow::getQImage()
     return image;
 }
 
+// converts the QImage to an IplImage format
 IplImage* MainWindow::Qimage2IplImage(QImage* imagein)
 {
     IplImage *imgHeader = cvCreateImageHeader( cvSize(imagein->width(), imagein->height()), IPL_DEPTH_8U, 4);
@@ -374,7 +389,7 @@ IplImage* MainWindow::Qimage2IplImage(QImage* imagein)
 
 
 
-
+// resets the missile count on the turret and updats the gui display
 void MainWindow::on_actionReload_triggered()
 {
     QMessageBox::information(this,"Reload","Reload launcher and press ok when finished");
@@ -384,7 +399,8 @@ void MainWindow::on_actionReload_triggered()
     ui->firebutton->setStyleSheet("Background: red");
 }
 
-
+// attempts to connect to the turret
+// if succeded or failed will updatet he gui accordingly
 void MainWindow::on_actionConnect_to_Turret_triggered()
 {
     if(turr->init()!=0)
@@ -409,6 +425,8 @@ void MainWindow::on_actionConnect_to_Turret_triggered()
     }
 }
 
+// attempts to connect to the camera
+// will return without attempting if the camera is already connected
 void MainWindow::on_actionConnect_to_Camera_triggered()
 {
     if(thread->isRunning())
@@ -443,16 +461,19 @@ void MainWindow::on_actionConnect_to_Camera_triggered()
     }
 }
 
+// displays the error returned from the readimages object that collects images from the kinect
 void MainWindow::errorstring(QString err)
 {
     QMessageBox::critical(this,"Error",err);
 }
 
+// updats the gui image display when a new image is available
 void MainWindow::updatepic(QPixmap newpicture)
 {
     ui->videostreamviewer->setPixmap(newpicture);
 }
 
+// check the missile count of the turret
 void MainWindow::checkformissiles()
 {
     if(turr->currentmissilecount()<=0)
@@ -467,6 +488,7 @@ void MainWindow::checkformissiles()
     ui->shotcountdisplay->display(turr->currentmissilecount());
 }
 
+// opens the calibration window and passes all required values
 void MainWindow::on_actionCalibrate_triggered()
 {
     QVector<int> tmpvectorint;
@@ -495,8 +517,16 @@ void MainWindow::on_actionCalibrate_triggered()
     delete cal;
 }
 
+// updats the timer every time the QTimer timesout
 void MainWindow::updaterunningtime()
 {
     ui->timeNumber->display(ui->timeNumber->value()+0.1);
 }
 
+// opens the help window
+void MainWindow::on_actionHelp_triggered()
+{
+    HelpWindow* win=new HelpWindow(this);
+    win->setModal(false);
+    win->show();
+}

@@ -3,6 +3,8 @@
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 
+
+// constructor for the calibration window which pulls all of the values from the incoming vectors and defines them in local values
 CalibrationWindow::CalibrationWindow(QWidget *parent,Turret* turr,QVector<int>* incomingdataint,QVector<double>* incomingdatadouble,IplImage* tmpimagein) :
     QDialog(parent),
     ui(new Ui::CalibrationWindow)
@@ -68,9 +70,11 @@ CalibrationWindow::~CalibrationWindow()
     delete ui;
 }
 
+
+// saves the current calibration to the file "targetsettings.ini" so the calibration may be loaded next run
 void CalibrationWindow::on_saveaccept_clicked()
 {
-    QSettings* targetsettings=new QSettings("targetsettings.ini",QSettings::IniFormat);
+    QSettings* targetsettings=new QSettings(QApplication::applicationDirPath()+"/targetsettings.ini",QSettings::IniFormat);
     targetsettings->beginGroup("target");
     targetsettings->setValue("h",ui->targdist->text().toDouble());
     targetsettings->setValue("offset",ui->turroffset->text().toDouble()); //in feet!!!!!!
@@ -95,10 +99,12 @@ void CalibrationWindow::on_saveaccept_clicked()
     targetsettings->endGroup();
     delete targetsettings;
     on_accept_clicked();
-
-
 }
 
+// updates the vectors that point to values held by the mainwindow
+// these calls would be dangerous if these values were used constantly
+// but considering the values are used when the user needs them
+// and that these pointers are always predefined these calls are safe
 void CalibrationWindow::on_accept_clicked()
 {
     ints->clear();
@@ -121,11 +127,12 @@ void CalibrationWindow::on_accept_clicked()
     accept();
 }
 
+// closes the window without updating
 void CalibrationWindow::on_cancel_clicked()
 {
     reject();
 }
-
+// changes the sliders to show the values of the first threshold range
 void CalibrationWindow::on_highendbutton_clicked()
 {
     if(highchecked==false)
@@ -146,6 +153,7 @@ void CalibrationWindow::on_highendbutton_clicked()
     highchecked=true;
 }
 
+// changes the sliders in the gui to display the second range of theshold values
 void CalibrationWindow::on_lowendbutton_clicked()
 {
     if(highchecked==true)
@@ -166,7 +174,7 @@ void CalibrationWindow::on_lowendbutton_clicked()
     highchecked=false;
 }
 
-
+// thesholds the image for display by the calibration window so the user may see the results of the changes
 void CalibrationWindow::threshimage(IplImage* imagein,IplImage* imageout)
 {
     IplImage* imgHSV=cvCreateImage(cvGetSize(imagein),8,3);
@@ -181,6 +189,7 @@ void CalibrationWindow::threshimage(IplImage* imagein,IplImage* imageout)
     cvReleaseImage(&tmp2);
 }
 
+// updates the image to display the new thresholded image when the user slides a slider
 void CalibrationWindow::updateImage()
 {
     if(ui->lowendbutton->isChecked())
@@ -260,6 +269,7 @@ if (channels == 4)
  return qimg;
 }
 
+// returns values int he calibration window to defaults
 void CalibrationWindow::on_defaultbutton_clicked()
 {
     ui->targdist->setText("10");

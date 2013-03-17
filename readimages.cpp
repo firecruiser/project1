@@ -10,13 +10,13 @@
 #include <Windows.h>
 #include <Ole2.h>
 
-
+// constructor
 ReadImages::ReadImages()
 {
 }
 
 
-
+// destructor
 ReadImages::~ReadImages()
 {
 

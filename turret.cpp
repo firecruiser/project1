@@ -3,6 +3,7 @@
 #include <QtCore>
 #include <QMessageBox>
 #include <qDebug>
+#include <QApplication>
 
 
 
@@ -12,7 +13,7 @@
 Turret::Turret(QWidget* parent) : QWidget(parent)
 {
 handle=NULL;
-QSettings* targetsettings=new QSettings("targetsettings.ini",QSettings::IniFormat);
+QSettings* targetsettings=new QSettings(QApplication::applicationDirPath()+"/targetsettings.ini",QSettings::IniFormat);
 targetsettings->beginGroup("turret");
 xmovespeed=targetsettings->value("xspeed",53.8).toDouble();
 ymovespeed=targetsettings->value("yspeed",32).toDouble();
@@ -187,6 +188,8 @@ void Turret::initAngle()
     betav=-4;
 }
 
+
+// returns a vector of turret movement parameters for calibration
 QVector<double> Turret::getparameters()
 {
     QVector<double> tmpdouble;
@@ -194,6 +197,8 @@ QVector<double> Turret::getparameters()
     return tmpdouble;
 }
 
+
+// updates turret movement parameters after calibration
 void Turret::setparameters(double xmove,double ymove,double offx,double offy)
 {
     xmovespeed=xmove;
@@ -203,6 +208,8 @@ void Turret::setparameters(double xmove,double ymove,double offx,double offy)
 
 }
 
+
+// emits stop to the turret and updates the boolean to let the targeting function move the the next call
 void Turret::emitstop()
 {
     sendmsg(STOP);
@@ -210,6 +217,7 @@ void Turret::emitstop()
     movetimer.stop();
 }
 
+// pauses the turret but retains movement information to allow the turret to continue once resumed
 void Turret::pauseshooting()
 {
     emitstop();
@@ -227,10 +235,10 @@ void Turret::pauseshooting()
     {
         return;
     }
-
-
 }
 
+
+// stops shooting and updates the boolean to tell the targeting function to skip the rest of the targeting calls
 void Turret::stopshooting()
 {
     shootingcanceled=true;
